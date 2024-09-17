@@ -91,7 +91,7 @@ int main() {
         tfxDraw(TFX_PRIMITIVTYPE_TRIANGLES, 3);
 
         // End the pass
-        tfxEndPass(); //actually not nescessary here, unbinds the pass rendertarget
+        tfxEndPass(); //actually not nescessary here, binds the 0 framebuffer
 
         glfwSwapBuffers(window);
         glfwPollEvents();
