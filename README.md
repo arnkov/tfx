@@ -2,7 +2,9 @@
 Tfx is a toy single header graphics abstraction for OpenGL 3.3 and OpenGLes 3.0 in a very experimental stage.
 It embeds glad for OpenGL function loading and stb_image.h for image loading and tries, to enable painless graphics prototyping.
 It aims, to make OpenGL a bit less of a struggle: When to unbind which buffer? What is the active depth compare function? etc...
-The style leans a bit towards modern graphics apis, but tfx doesn't hide opengl away. You could just use it, to load it and then write plain gl code.
+The style leans a bit towards modern graphics apis, but tfx doesn't hide opengl away. You could just use it, to load it and then write plain gl code,
+which makes it easy, to do stuff like shader hot reloading&co, which is a bit harder using other abstraction layers.
+If you are looking for something more mature, have a look at sokol_gfx.h or bgfx.
 Right now it compiles as c on windows and linux. Other platforms are not tested.
 
 ## triangle example using glfw for windowing
