@@ -103,8 +103,8 @@ int main() {
     tfxReleaseBuffer(&vertexBuffer);
     tfxReleaseShader(&shader);
     tfxReleaseMesh(&triangleMesh);
-    glfwDestroyWindow(window);  // Destroy the window
-    glfwTerminate();  // Terminate GLFW
+    glfwDestroyWindow(window);
+    glfwTerminate();
     return 0;
 }
 
