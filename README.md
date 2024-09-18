@@ -14,8 +14,8 @@ To use it, just drop the header file into your project, include it and define TF
 The different licenses are included in the header file, which are MIT/PublicDomain for stb_image.h, WTFPL OR CC0-1.0 AND Apache-2.0 for the glad-headers and the uLicense for the actual code of tfx.
 
 Credits:
-David Herberth - [glad](https://github.com/Dav1dde/glad)
-Sean Barrett - [stb_image](https://github.com/nothings/stb)
+David Herberth - [glad](https://github.com/Dav1dde/glad) /
+Sean Barrett - [stb_image](https://github.com/nothings/stb) /
 r-lyeh - [uLicense](https://github.com/r-lyeh/uLicense)
 
 ## triangle example using glfw for windowing
