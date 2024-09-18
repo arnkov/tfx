@@ -6062,6 +6062,13 @@ int gladLoadGLES2( GLADloadfunc load) {
 #endif //TFX_GLCORE/TFX_GLES2
 
 //FILE_START:tfx.h
+/*
+Copyright (c) 2024 Arne Koenig
+Redistribution and use in source and binary forms, with or without modification, are permitted.
+THIS SOFTWARE IS PROVIDED 'AS-IS', WITHOUT ANY EXPRESS OR IMPLIED WARRANTY.
+IN NO EVENT WILL THE AUTHORS BE HELD LIABLE FOR ANY DAMAGES ARISING FROM THE USE OF THIS SOFTWARE.
+*/
+
 #ifndef TFX_HEADER
 #define TFX_HEADER
 
@@ -14381,6 +14388,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //FILE_END
 
 //FILE_START:tfx.c
+/*
+Copyright (c) 2024 Arne Koenig
+Redistribution and use in source and binary forms, with or without modification, are permitted.
+THIS SOFTWARE IS PROVIDED 'AS-IS', WITHOUT ANY EXPRESS OR IMPLIED WARRANTY.
+IN NO EVENT WILL THE AUTHORS BE HELD LIABLE FOR ANY DAMAGES ARISING FROM THE USE OF THIS SOFTWARE.
+*/
+
 #ifndef TFX_SINGLE_HEADER
 #include "tfx.h"
 #define STB_IMAGE_IMPLEMENTATION
