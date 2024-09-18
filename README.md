@@ -9,7 +9,9 @@ which makes it easy, to do stuff like shader hot reloading&co, which is a bit ha
 If you are looking for something more mature, have a look at sokol_gfx.h or bgfx.
 Right now it compiles as c on windows and linux. Other platforms are not tested.
 
-To use it, just drop the header file into your project, include it and define TFX_IMPL and the backend (TFX_GLCORE/TFX_GLES2) in *one* C file. 
+To use it, just drop the header file into your project, include it and define TFX_IMPL and the backend (TFX_GLCORE/TFX_GLES2) in *one* C file.
+
+The different licenses are included in the header file, which are MIT/PublicDomain for stb_image.h, WTFPL OR CC0-1.0 AND Apache-2.0 for the glad-headers and the uLicense for the actual code of tfx.
 
 ## triangle example using glfw for windowing
 ```c
