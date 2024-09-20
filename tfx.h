@@ -6192,10 +6192,8 @@ typedef enum {
     TFX_BLEND_ADD,
 } tfxBlendMode;
 
-typedef enum {
-	TFX_CLEAR_COLOR = GL_COLOR_BUFFER_BIT,
-	TFX_CLEAR_DEPTH = GL_DEPTH_BUFFER_BIT,
-} tfxClearFlags;
+static const uint16_t TFX_CLEAR_COLOR = GL_COLOR_BUFFER_BIT;
+static const uint16_t TFX_CLEAR_DEPTH = GL_DEPTH_BUFFER_BIT;
 
 //--TYPES&FUNCS----------------------------------------------
 
@@ -6361,7 +6359,7 @@ typedef struct {
 } tfxColor;
 
 typedef struct {
-	tfxClearFlags clearFlags;
+    uint16_t clearFlags;
 	tfxColor clearValue;
 	tfxRenderTarget framebuffer;
 } tfxPass;
@@ -14394,7 +14392,6 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED 'AS-IS', WITHOUT ANY EXPRESS OR IMPLIED WARRANTY.
 IN NO EVENT WILL THE AUTHORS BE HELD LIABLE FOR ANY DAMAGES ARISING FROM THE USE OF THIS SOFTWARE.
 */
-
 #ifndef TFX_SINGLE_HEADER
 #include "tfx.h"
 #define STB_IMAGE_IMPLEMENTATION
@@ -14708,7 +14705,7 @@ tfxImageData tfxLoadImageDataMem(const tfxMemory* mem, int desiredChannels) {
     stbi_set_flip_vertically_on_load(1);
 	int c = 0;
 	img.data = stbi_load_from_memory(
-		mem->ptr,
+		(const stbi_uc*)mem->ptr,
 		(int)mem->size,
 		&img.width,
 		&img.height,
@@ -14769,16 +14766,17 @@ tfxTexture tfxLoadTexture(const char* path, const tfxTextureParams* params) {
 	int channels = 4;
     stbi_set_flip_vertically_on_load(1);
     uint8_t* pixels = stbi_load(path, &w, &h, &c, channels);
-	tex = tfxMakeTexture(&(tfxTextureDesc) {
-		.img.data = pixels,
-		.img.width = w,
-		.img.height = h,
-		.img.format = _intToPixelFormat(channels),
-		.params.minFilter = params->minFilter,
-		.params.magFilter = params->magFilter,
-		.params.wrapS = params->wrapS,
-		.params.wrapT = params->wrapT,
-	}); 
+	tfxTextureDesc desc;
+	memset(&desc, 0, sizeof(tfxTextureDesc));
+	desc.img.data = pixels,
+	desc.img.width = w,
+	desc.img.height = h,
+	desc.img.format = _intToPixelFormat(channels),
+	desc.params.minFilter = params->minFilter,
+	desc.params.magFilter = params->magFilter,
+	desc.params.wrapS = params->wrapS,
+	desc.params.wrapT = params->wrapT,
+	tex = tfxMakeTexture(&desc);
 	stbi_image_free(pixels);
 	return tex;
 }
@@ -14790,23 +14788,24 @@ tfxTexture tfxLoadTextureMem(const tfxMemory* mem, const tfxTextureParams* param
 	int channels = 4;
     stbi_set_flip_vertically_on_load(1);
 	uint8_t* pixels = stbi_load_from_memory(
-		mem->ptr,
+		(const stbi_uc*)mem->ptr,
 		(int)mem->size,
 		&w,
 		&h,
 		&c,
 		channels
 	);
-	tex = tfxMakeTexture(&(tfxTextureDesc) {
-		.img.data = pixels,
-		.img.width = w,
-		.img.height = h,
-		.img.format = _intToPixelFormat(channels),
-		.params.minFilter = params->minFilter,
-		.params.magFilter = params->magFilter,
-		.params.wrapS = params->wrapS,
-		.params.wrapT = params->wrapT,
-	}); 
+	tfxTextureDesc desc;
+	memset(&desc, 0, sizeof(tfxTextureDesc));
+	desc.img.data = pixels,
+	desc.img.width = w,
+	desc.img.height = h,
+	desc.img.format = _intToPixelFormat(channels),
+	desc.params.minFilter = params->minFilter,
+	desc.params.magFilter = params->magFilter,
+	desc.params.wrapS = params->wrapS,
+	desc.params.wrapT = params->wrapT,
+	tex = tfxMakeTexture(&desc);
 	stbi_image_free(pixels);
 	return tex;
 }
@@ -15022,7 +15021,10 @@ void tfxUniformTex(const tfxShader* shader, const char* name, int textureUnit) {
 tfxPass tfxInitPass() {
 	tfxPass pass;
 	pass.clearFlags = TFX_CLEAR_COLOR | TFX_CLEAR_DEPTH;
-	pass.clearValue = (tfxColor){ 0, 0, 0, 1 };
+	pass.clearValue.r = 0;
+	pass.clearValue.g = 0;
+	pass.clearValue.b = 0;
+	pass.clearValue.a = 1;
 	memset(&pass.framebuffer, 0, sizeof(tfxRenderTarget));
 	return pass;
 }
