@@ -1,15 +1,14 @@
 # tfx
-Tfx is a toy single header graphics abstraction for OpenGL 3.3 and OpenGLes 3.0 in a very experimental stage.
+Tfx is an easy to use toy single header WIP graphics abstraction for OpenGL 3.3 and OpenGLes 3.0.
 It embeds glad for OpenGL function loading and stb_image.h for image loading and tries, to enable painless graphics prototyping.
 
-It aims, to make OpenGL a bit less of a struggle: When to unbind which buffer? What is the active depth compare function? And why is verything an int?!
-The style leans a bit towards modern graphics apis, but tfx doesn't hide opengl away. You could just use it, to load it and then write plain gl code,
-which makes it easy, to do stuff like shader hot reloading&co, which is a bit harder using other abstraction layers.
+It aims, to make OpenGL a bit less of a struggle: When to unbind the index buffer? What is the active depth compare function? And why is everything an int?!
+The style leans a bit towards modern graphics apis, but tfx doesn't hide opengl away. You could just use it, to load it and then write plain gl code.
 
 If you are looking for something more mature, have a look at sokol_gfx.h or bgfx.
-Right now it compiles as c on windows and linux. Other platforms are not tested.
+Right now it compiles as C and c++ on windows and linux. Other platforms should work, but are not tested.
 
-To use it, just drop the header file into your project, include it and define TFX_IMPL and the backend (TFX_GLCORE/TFX_GLES2) in *one* C file.
+To use it, just drop the header file into your project, include it and define TFX_IMPL and the backend (TFX_GLCORE/TFX_GLES2) in *one* C/C++ file.
 
 The different licenses are included in the header file, which are MIT/PublicDomain for stb_image.h, WTFPL OR CC0-1.0 AND Apache-2.0 for the glad-headers and the uLicense for the actual code of tfx.
 
@@ -96,7 +95,7 @@ int main() {
         });
 
         // Set the pipeline and shader
-        tfxSetPipeline(&(tfxPipeline){}); //actually not nescessary here.
+        tfxSetPipeline(&(tfxPipeline){}); // Actually not nescessary here.
         tfxSetShader(&shader);
 
         // Set the mesh (triangle) and draw it
@@ -104,7 +103,7 @@ int main() {
         tfxDraw(TFX_PRIMITIVTYPE_TRIANGLES, 3);
 
         // End the pass
-        tfxEndPass(); //actually not nescessary here, binds the 0 framebuffer
+        tfxEndPass(); // Actually not nescessary here, binds the default/0th framebuffer.
 
         glfwSwapBuffers(window);
         glfwPollEvents();
