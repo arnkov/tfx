@@ -20,7 +20,8 @@ r-lyeh - [uLicense](https://github.com/r-lyeh/uLicense)
 ## triangle example using glfw for windowing
 ```c
 #define TFX_IMPL
-#define TFX_GLCORE //can also be TFX_GLES2
+#define TFX_NO_STBI // stb_image.h is not needed here
+#define TFX_GLCORE // Can also be TFX_GLES2
 #include "tfx.h"
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
