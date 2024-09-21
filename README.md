@@ -8,7 +8,7 @@ The style leans a bit towards modern graphics apis, but tfx doesn't hide opengl 
 If you are looking for something more mature, have a look at sokol_gfx.h or bgfx.
 Right now it compiles as C and c++ on windows and linux. Other platforms should work, but are not tested.
 
-To use it, just drop the header file into your project, include it and define TFX_IMPL the backend (TFX_GLCORE/TFX_GLES2) in *one* C/C++ file. Optional defines are TFX_NO_STBI and TFX_EXTERNAL_STBI in case you already included stb_image.h somewhere else in your project and/or want to define the implementation at some other point. You can find the header linked below.
+To use it, just drop the header file into your project, include it and define TFX_IMPL and the backend (TFX_GLCORE/TFX_GLES2) in *one* C/C++ file. Optional defines are TFX_NO_STBI and TFX_EXTERNAL_STBI in case you already included stb_image.h somewhere else in your project and/or want to define the implementation at some other point. You can find the header linked below.
 
 The different licenses are included in the header file, which are WTFPL OR CC0-1.0 AND Apache-2.0 for the glad-headers and the uLicense for the actual code of tfx.
 
