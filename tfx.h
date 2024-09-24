@@ -3403,7 +3403,7 @@ int gladLoadGL( GLADloadfunc load) {
 
 
 
- 
+
 
 
 #ifdef __cplusplus
@@ -6048,7 +6048,7 @@ int gladLoadGLES2( GLADloadfunc load) {
 
 
 
- 
+
 
 
 #ifdef __cplusplus
@@ -6068,9 +6068,10 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED 'AS-IS', WITHOUT ANY EXPRESS OR IMPLIED WARRANTY.
 IN NO EVENT WILL THE AUTHORS BE HELD LIABLE FOR ANY DAMAGES ARISING FROM THE USE OF THIS SOFTWARE.
 */
-
 #ifndef TFX_HEADER
 #define TFX_HEADER
+
+//#define TFX_GLCORE
 
 #include <stdint.h>
 #include <stddef.h>
@@ -6105,13 +6106,10 @@ typedef enum {
 typedef enum {
     TFX_PIXELFORMAT_NONE = GL_NONE,
     TFX_PIXELFORMAT_R8 = GL_R8,
-    TFX_PIXELFORMAT_R16F = GL_R16F,
     TFX_PIXELFORMAT_R32F = GL_R32F,
     TFX_PIXELFORMAT_RGB8 = GL_RGB8,
-    TFX_PIXELFORMAT_RGB16F = GL_RGB16F,
     TFX_PIXELFORMAT_RGB32F = GL_RGB32F,
     TFX_PIXELFORMAT_RGBA8 = GL_RGBA8,
-    TFX_PIXELFORMAT_RGBA16F = GL_RGBA16F,
     TFX_PIXELFORMAT_RGBA32F = GL_RGBA32F,
 } tfxPixelFormat;
 
@@ -6121,6 +6119,7 @@ typedef enum {
     TFX_PRIMITIVTYPE_LINE_STRIP = GL_LINE_STRIP,
     TFX_PRIMITIVTYPE_TRIANGLES = GL_TRIANGLES,
     TFX_PRIMITIVTYPE_TRIANGLE_STRIP = GL_TRIANGLE_STRIP,
+    TFX_PRIMITIVTYPE_TRIANGLE_FAN = GL_TRIANGLE_FAN,
 } tfxPrimitiveType;
 
 typedef enum {
@@ -6175,7 +6174,7 @@ typedef enum {
 } tfxCompareFunc;
 
 typedef enum {
-    TFX_STENCILOP_KEPP = GL_KEEP,
+    TFX_STENCILOP_KEEP = GL_KEEP,
     TFX_STENCILOP_ZERO = GL_ZERO,
     TFX_STENCILOP_REPLACE = GL_REPLACE,
     TFX_STENCILOP_INCR = GL_INCR,
@@ -6244,8 +6243,6 @@ void tfxReleaseBuffer(tfxBuffer* buffer);
 void tfxUpdateBuffer(tfxBuffer* buffer, int offset);
 
 //--MESH-----------------------------------
-
-#define TFX_MAX_ATTRIBS 8
 
 typedef struct {
 	int size;
@@ -6325,8 +6322,8 @@ typedef struct {
 
 typedef struct {
     GLuint fbo;
-    GLuint texture;
-    GLuint depthTexture;
+    tfxTexture colorTexture;
+    tfxTexture depthTexture;
     GLuint rbo;
 } tfxRenderTarget;
 
@@ -6623,7 +6620,7 @@ tfxMesh tfxMakeMesh(tfxMeshDesc* desc) {
 	}
 
 	// Set up vertex attribute pointers
-	for (int i = 0; i < TFX_MAX_ATTRIBS; ++i) {
+	for (int i = 0; i < TFX_MAX_VERTEX_BUFFERS; ++i) {
 		int bufferIndex = desc->layout[i].bufferIndex;
 		if (desc->vbuf[bufferIndex] == NULL || desc->layout[i].size == 0) break;
 
@@ -6869,8 +6866,8 @@ tfxRenderTarget tfxMakeRenderTarget(const tfxRenderTargetDesc* desc) {
 	glBindFramebuffer(GL_FRAMEBUFFER, rt.fbo);
 
 	// Create texture for color attachment
-	glGenTextures(1, &rt.texture);
-	glBindTexture(GL_TEXTURE_2D, rt.texture);
+	glGenTextures(1, &rt.colorTexture.handle);
+	glBindTexture(GL_TEXTURE_2D, rt.colorTexture.handle);
 
 	GLint internalFormat = tfx_def(desc->format, GL_RGBA8);
 	GLenum format = _toGlFormat(internalFormat);
@@ -6893,12 +6890,12 @@ tfxRenderTarget tfxMakeRenderTarget(const tfxRenderTargetDesc* desc) {
 	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, desc->width, desc->height, 0, format, GL_UNSIGNED_BYTE, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt.texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt.colorTexture.handle, 0);
 
 	// Create texture for depth attachment
 	if (desc->createDepthTex) {
-		glGenTextures(1, &rt.depthTexture);
-		glBindTexture(GL_TEXTURE_2D, rt.depthTexture);
+		glGenTextures(1, &rt.depthTexture.handle);
+		glBindTexture(GL_TEXTURE_2D, rt.depthTexture.handle);
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
@@ -6908,7 +6905,7 @@ tfxRenderTarget tfxMakeRenderTarget(const tfxRenderTargetDesc* desc) {
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, desc->width, desc->height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, rt.depthTexture, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, rt.depthTexture.handle, 0);
 	}
 
 	// Create renderbuffer for stencil attachment
@@ -6923,8 +6920,8 @@ tfxRenderTarget tfxMakeRenderTarget(const tfxRenderTargetDesc* desc) {
 		printf("Error: Framebuffer is not complete!\n");
 		// Clean up if framebuffer is not complete
 		glDeleteFramebuffers(1, &rt.fbo);
-		glDeleteTextures(1, &rt.texture);
-		glDeleteTextures(1, &rt.depthTexture);
+		glDeleteTextures(1, &rt.colorTexture.handle);
+		glDeleteTextures(1, &rt.depthTexture.handle);
 		glDeleteRenderbuffers(1, &rt.rbo);
 		memset(&rt, 0, sizeof(tfxRenderTarget));
 	}
@@ -6943,8 +6940,8 @@ void tfxUnbindRenderTarget() {
 
 void tfxReleaseRenderTarget(tfxRenderTarget* rt) {
 	glDeleteFramebuffers(1, &rt->fbo);
-	glDeleteTextures(1, &rt->texture);
-	glDeleteTextures(1, &rt->depthTexture);
+	glDeleteTextures(1, &rt->colorTexture.handle);
+	glDeleteTextures(1, &rt->depthTexture.handle);
 	glDeleteRenderbuffers(1, &rt->rbo);
 	memset(rt, 0, sizeof(tfxRenderTarget));
 }
@@ -7062,7 +7059,7 @@ tfxPass tfxInitPass() {
 }
 
 void tfxBeginPass(const tfxPass* pass) {
-	glBindFramebuffer(GL_FRAMEBUFFER, pass->framebuffer.texture);
+	glBindFramebuffer(GL_FRAMEBUFFER, pass->framebuffer.fbo);
 	glClearColor(
 		pass->clearValue.r,
 		pass->clearValue.g,
