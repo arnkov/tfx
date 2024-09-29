@@ -3403,7 +3403,7 @@ int gladLoadGL( GLADloadfunc load) {
 
 
 
-
+ 
 
 
 #ifdef __cplusplus
@@ -6048,7 +6048,7 @@ int gladLoadGLES2( GLADloadfunc load) {
 
 
 
-
+ 
 
 
 #ifdef __cplusplus
@@ -6070,8 +6070,6 @@ IN NO EVENT WILL THE AUTHORS BE HELD LIABLE FOR ANY DAMAGES ARISING FROM THE USE
 */
 #ifndef TFX_HEADER
 #define TFX_HEADER
-
-//#define TFX_GLCORE
 
 #include <stdint.h>
 #include <stddef.h>
@@ -6114,12 +6112,12 @@ typedef enum {
 } tfxPixelFormat;
 
 typedef enum {
-    TFX_PRIMITIVTYPE_POINTS = GL_POINTS,
-    TFX_PRIMITIVTYPE_LINES = GL_LINES,
-    TFX_PRIMITIVTYPE_LINE_STRIP = GL_LINE_STRIP,
-    TFX_PRIMITIVTYPE_TRIANGLES = GL_TRIANGLES,
-    TFX_PRIMITIVTYPE_TRIANGLE_STRIP = GL_TRIANGLE_STRIP,
-    TFX_PRIMITIVTYPE_TRIANGLE_FAN = GL_TRIANGLE_FAN,
+    TFX_PRIMITIVETYPE_POINTS = GL_POINTS,
+    TFX_PRIMITIVETYPE_LINES = GL_LINES,
+    TFX_PRIMITIVETYPE_LINE_STRIP = GL_LINE_STRIP,
+    TFX_PRIMITIVETYPE_TRIANGLES = GL_TRIANGLES,
+    TFX_PRIMITIVETYPE_TRIANGLE_STRIP = GL_TRIANGLE_STRIP,
+    TFX_PRIMITIVETYPE_TRIANGLE_FAN = GL_TRIANGLE_FAN,
 } tfxPrimitiveType;
 
 typedef enum {
@@ -6260,6 +6258,15 @@ typedef struct {
 	tfxBuffer* ibuf;
 } tfxMeshDesc;
 
+#ifdef SWIGLUA
+static inline void tfxMeshDescSetVbuf(tfxMeshDesc* desc, tfxBuffer* buf, int idx) {
+    desc->vbuf[idx] = buf;
+}
+static inline void tfxMeshDescSetLayout(tfxMeshDesc* desc, tfxVertexAttr attr, int idx) {
+    desc->layout[idx] = attr;
+}
+#endif
+
 typedef struct {
 	uint32_t handle;
 } tfxMesh;
@@ -6311,7 +6318,6 @@ void tfxReleaseTexture(tfxTexture* texture);
 
 //--RENDERTARGET-----------------------------------
 
-//TODO: switch to tfxTextureParams
 typedef struct {
     int width;
     int height;
