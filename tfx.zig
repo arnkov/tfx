@@ -154,6 +154,7 @@ fn cStrToZig(cstr: [*c]const u8) [:0]const u8 {
     return @import("std").mem.span(cstr);
 }
 
+//from https://github.com/floooh/sokol-zig
 pub fn asMemory(val: anytype) Memory {
     const type_info = @typeInfo(@TypeOf(val));
     // FIXME: naming convention change between 0.13 and 0.14-dev
