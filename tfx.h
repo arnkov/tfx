@@ -3,6 +3,9 @@
 //-----------------------------------------------------------------------------
 // Headers
 //-----------------------------------------------------------------------------
+#if !defined(TFX_GLCORE) && !defined(TFX_GLES2)
+#define TFX_GLCORE
+#endif //no backend defined
 
 #if defined(TFX_GLCORE)
 
@@ -6075,6 +6078,9 @@ IN NO EVENT WILL THE AUTHORS BE HELD LIABLE FOR ANY DAMAGES ARISING FROM THE USE
 #include <stddef.h>
 #include <stdbool.h>
 #ifndef TFX_SINGLE_HEADER
+#if !defined(TFX_GLCORE) && !defined(TFX_GLES2)
+#define TFX_GLCORE
+#endif //no backend defined
 #ifdef TFX_GLES2
 #include "gles2.h"
 #elif defined(TFX_GLCORE)
@@ -6103,13 +6109,16 @@ typedef enum {
 
 typedef enum {
     TFX_PIXELFORMAT_NONE = GL_NONE,
-    TFX_PIXELFORMAT_R8 = GL_R8,
-    TFX_PIXELFORMAT_R32F = GL_R32F,
-    TFX_PIXELFORMAT_RGB8 = GL_RGB8,
-    TFX_PIXELFORMAT_RGB32F = GL_RGB32F,
-    TFX_PIXELFORMAT_RGBA8 = GL_RGBA8,
-    TFX_PIXELFORMAT_RGBA32F = GL_RGBA32F,
+    TFX_PIXELFORMAT_U8 = GL_UNSIGNED_BYTE,
+    TFX_PIXELFORMAT_F32 = GL_FLOAT,
 } tfxPixelFormat;
+
+typedef enum {
+    TFX_TEXTUREFORMAT_NONE = 0,
+    TFX_TEXTUREFORMAT_R = GL_RED,
+    TFX_TEXTUREFORMAT_RGB = GL_RGB,
+    TFX_TEXTUREFORMAT_RGBA = GL_RGBA,
+} tfxTextureFormat;
 
 typedef enum {
     TFX_PRIMITIVETYPE_POINTS = GL_POINTS,
@@ -6280,7 +6289,7 @@ void tfxSetMesh(tfxMesh* mesh);
 typedef struct {
     void* data;
     int width, height;
-    tfxPixelFormat format;
+    tfxTextureFormat format;
 } tfxImageData;
 
 typedef struct {
@@ -6304,7 +6313,7 @@ typedef struct {
 } tfxTextureDesc;
 
 typedef struct {
-    GLuint handle;
+    uint32_t handle;
 } tfxTexture;
 
 tfxTexture tfxMakeTexture(const tfxTextureDesc* desc);
@@ -6312,6 +6321,7 @@ tfxTexture tfxMakeTexture(const tfxTextureDesc* desc);
 tfxTexture tfxLoadTexture(const char* path, const tfxTextureParams* params);
 tfxTexture tfxLoadTextureMem(const tfxMemory* mem, const tfxTextureParams* params);
 #endif //TFX_NO_STBI
+void tfxUpdateTexture(tfxTexture* texture, uint32_t unit, const tfxTextureDesc* desc);
 void tfxSetTexture(tfxTexture* texture, uint32_t unit);
 void tfxUnbindTexture(tfxTexture* texture, uint32_t unit);
 void tfxReleaseTexture(tfxTexture* texture);
@@ -6322,15 +6332,15 @@ typedef struct {
     int width;
     int height;
     bool createDepthTex;
-    tfxPixelFormat format;
+    tfxTextureFormat format;
     tfxTextureParams params;
 } tfxRenderTargetDesc;
 
 typedef struct {
-    GLuint fbo;
+    uint32_t fbo;
     tfxTexture colorTexture;
     tfxTexture depthTexture;
-    GLuint rbo;
+    uint32_t rbo;
 } tfxRenderTarget;
 
 tfxRenderTarget tfxMakeRenderTarget(const tfxRenderTargetDesc* desc);
@@ -6343,7 +6353,7 @@ void tfxReleaseRenderTarget(tfxRenderTarget* rt);
 
 
 typedef struct {
-	uint32_t handle;
+    uint32_t handle;
 } tfxShader;
 
 tfxShader tfxMakeShader(const tfxMemory* vs_src, const tfxMemory* fs_src);
@@ -6414,6 +6424,7 @@ IN NO EVENT WILL THE AUTHORS BE HELD LIABLE FOR ANY DAMAGES ARISING FROM THE USE
 #include "tfx.h"
 #endif //TFX_SINGLE_HEADER
 
+
 #ifndef TFX_NO_STBI
 #ifndef TFX_EXTERNAL_STBI
 #define STB_IMAGE_IMPLEMENTATION
@@ -6423,10 +6434,6 @@ IN NO EVENT WILL THE AUTHORS BE HELD LIABLE FOR ANY DAMAGES ARISING FROM THE USE
 
 #include <assert.h>
 
-#ifdef _WIN32
-_declspec(dllexport) unsigned long NvOptimusEnablement = 1;
-_declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
-#endif
 
 #define tfx_def(val, def) (val == 0) ? def : val
 
@@ -6662,12 +6669,16 @@ tfxMesh tfxMakeMesh(tfxMeshDesc* desc) {
 
 	// Unbind the EBO last, if it was bound
 	if (desc->ibuf != NULL) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
+#ifdef TFX_DEBUG
+    TFX_CHECK("tfxMakeMesh");
+#endif
 	return mesh;
 }
 
 void tfxReleaseMesh(tfxMesh* mesh) {
     glDeleteVertexArrays(1, &mesh->handle);
+    printf("released mesh: %i\n", mesh->handle);
+    mesh->handle = 0;
 }
 
 void tfxSetMesh(tfxMesh* mesh) {
@@ -6677,47 +6688,22 @@ void tfxSetMesh(tfxMesh* mesh) {
 
 //--TEXTURES-------------------------------------------
 
-static GLenum _toGlFormat(GLint format) {
-	GLenum iFormat = 0;
-	switch (format) {
-	case GL_RGBA8:
-	case GL_RGBA16F:
-	case GL_RGBA32F:
-		iFormat = GL_RGBA;
-		break;
-	case GL_RGB8:
-	case GL_RGB16F:
-	case GL_RGB32F:
-		iFormat = GL_RGB;
-		break;
-	case GL_R8:
-	case GL_R16F:
-	case GL_R32F:
-		iFormat = GL_RED;
-		break;
-	default:
-		iFormat = GL_NONE;
-		break;
-	}
-	return iFormat;
-}
-
-tfxPixelFormat _intToPixelFormat(int fmt) {
-	tfxPixelFormat pix = TFX_PIXELFORMAT_NONE;
+tfxTextureFormat _intToTexFormat(int fmt) {
+	tfxTextureFormat ret = TFX_TEXTUREFORMAT_NONE;
 	switch (fmt) {
 	case 4:
-		pix = TFX_PIXELFORMAT_RGBA8;
+		ret = TFX_TEXTUREFORMAT_RGBA;
 		break;
 	case 3:
-		pix = TFX_PIXELFORMAT_RGB8;
-		break;
-	case 1:
-		pix = TFX_PIXELFORMAT_R8;
+        ret = TFX_TEXTUREFORMAT_RGB;
+        break;
+    case 1:
+		ret = TFX_TEXTUREFORMAT_R;
 		break;
 	default:
 		break;
 	}
-	return pix;
+	return ret;
 }
 
 #ifndef TFX_NO_STBI
@@ -6727,7 +6713,7 @@ tfxImageData tfxLoadImageData(const char* path, int desiredChannels) {
     stbi_set_flip_vertically_on_load(1);
 	int c = 0;
     img.data = stbi_load(path, &img.width, &img.height, &c, desiredChannels);
-	img.format = _intToPixelFormat(desiredChannels);
+	img.format = _intToTexFormat(desiredChannels);
 	return img;
 }
 
@@ -6744,7 +6730,7 @@ tfxImageData tfxLoadImageDataMem(const tfxMemory* mem, int desiredChannels) {
 		&c,
 		desiredChannels
 	);
-	img.format = _intToPixelFormat(desiredChannels);
+	img.format = _intToTexFormat(desiredChannels);
 	return img;
 }
 
@@ -6752,7 +6738,7 @@ void tfxReleaseImageData(tfxImageData* img) {
 	if (img->data) stbi_image_free(img->data);
 	img->width = 0;
 	img->height = 0;
-	img->format = TFX_PIXELFORMAT_NONE;
+	img->format = TFX_TEXTUREFORMAT_NONE;
 }
 #endif //TFX_NO_STBI
 
@@ -6763,8 +6749,22 @@ tfxTexture tfxMakeTexture(const tfxTextureDesc* desc) {
 	glGenTextures(1, &tex.handle);
 	glBindTexture(GL_TEXTURE_2D, tex.handle);
 
-	GLint internalFormat = tfx_def(desc->img.format, GL_RGB8);
-	GLenum format = _toGlFormat(internalFormat);
+	GLint format = (tfx_def((GLint)desc->img.format, GL_RGB));
+    if (format == (int)TFX_TEXTUREFORMAT_R) {
+        puts("RED");
+    }
+    if (format == (int)TFX_TEXTUREFORMAT_RGB) {
+        puts("RGB");
+    }
+    if (format == (int)TFX_TEXTUREFORMAT_RGBA) {
+        puts("RGBA");
+    }
+    if (format == (int)TFX_TEXTUREFORMAT_NONE) {
+        puts("NONE");
+    }
+    printf("%i\n", format);
+
+    //glTexImage2D(tgt, lvl, ifmt, w, h, border, fmt, type, pixels);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, tfx_def(desc->params.wrapS, GL_REPEAT));
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tfx_def(desc->params.wrapT, GL_REPEAT));
@@ -6775,18 +6775,23 @@ tfxTexture tfxMakeTexture(const tfxTextureDesc* desc) {
 		glTexImage2D(
 			GL_TEXTURE_2D,
 			0,
-			internalFormat,
+			format,
 			desc->img.width, desc->img.height, 0,
 			format,
 			GL_UNSIGNED_BYTE,
 			desc->img.data
 		);
+        TFX_CHECK("tfxMakeTexture");
 		glGenerateMipmap(GL_TEXTURE_2D);
 		printf("loaded texture: %i\n", tex.handle);
 	}
 	else {
 		printf("failed to load texture\n");
 	}
+
+#ifdef TFX_DEBUG
+    TFX_CHECK("tfxMakeTexture");
+#endif
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 	return tex;
@@ -6800,18 +6805,26 @@ tfxTexture tfxLoadTexture(const char* path, const tfxTextureParams* params) {
 	int channels = 4;
     stbi_set_flip_vertically_on_load(1);
     uint8_t* pixels = stbi_load(path, &w, &h, &c, channels);
+    if (!pixels) {
+        printf("Failed to load image: %s\n", stbi_failure_reason());
+        return tex;  // Return an empty texture if loading failed
+    }
 	tfxTextureDesc desc;
 	memset(&desc, 0, sizeof(tfxTextureDesc));
 	desc.img.data = pixels,
 	desc.img.width = w,
 	desc.img.height = h,
-	desc.img.format = _intToPixelFormat(channels),
-	desc.params.minFilter = params->minFilter,
-	desc.params.magFilter = params->magFilter,
-	desc.params.wrapS = params->wrapS,
-	desc.params.wrapT = params->wrapT,
+	desc.img.format = _intToTexFormat(channels),
+    desc.params.minFilter = tfx_def(params->minFilter, TFX_FILTER_LINEAR),
+	desc.params.magFilter = tfx_def(params->magFilter, TFX_FILTER_LINEAR),
+	desc.params.wrapS = tfx_def(params->wrapS, TFX_WRAP_REPEAT),
+	desc.params.wrapT = tfx_def(params->wrapT, TFX_WRAP_REPEAT),
+
 	tex = tfxMakeTexture(&desc);
 	stbi_image_free(pixels);
+#ifdef TFX_DEBUG
+    TFX_CHECK("tfxLoadTexture");
+#endif
 	return tex;
 }
 
@@ -6834,23 +6847,36 @@ tfxTexture tfxLoadTextureMem(const tfxMemory* mem, const tfxTextureParams* param
 	desc.img.data = pixels,
 	desc.img.width = w,
 	desc.img.height = h,
-	desc.img.format = _intToPixelFormat(channels),
-	desc.params.minFilter = params->minFilter,
-	desc.params.magFilter = params->magFilter,
-	desc.params.wrapS = params->wrapS,
-	desc.params.wrapT = params->wrapT,
+	desc.img.format = _intToTexFormat(channels),
+	desc.params.minFilter = tfx_def(params->minFilter, TFX_FILTER_LINEAR),
+	desc.params.magFilter = tfx_def(params->magFilter, TFX_FILTER_LINEAR),
+	desc.params.wrapS = tfx_def(params->wrapS, TFX_WRAP_REPEAT),
+	desc.params.wrapT = tfx_def(params->wrapT, TFX_WRAP_REPEAT),
 	tex = tfxMakeTexture(&desc);
 	stbi_image_free(pixels);
+#ifdef TFX_DEBUG
+    TFX_CHECK("tfxLoadTextureMem");
+#endif
+
 	return tex;
 }
 #endif //TFX_NO_STBI
 
-void tfxReleaseTexture(tfxTexture* tex) {
-    glDeleteTextures(1, &tex->handle);
+void tfxUpdateTexture(tfxTexture* tex, uint32_t unit, const tfxTextureDesc* desc) {
+	glActiveTexture(GL_TEXTURE0 + unit);
+	glBindTexture(GL_TEXTURE_2D, tex->handle);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, desc->img.width, desc->img.height, desc->img.format, GL_UNSIGNED_BYTE, desc->img.data);
+    glActiveTexture(0);
 }
 
-void tfxSetTexture(tfxTexture* tex, uint32_t location) {
-	glActiveTexture(GL_TEXTURE0 + location);
+void tfxReleaseTexture(tfxTexture* tex) {
+    glDeleteTextures(1, &tex->handle);
+    printf("released texture: %i\n", tex->handle);
+    tex->handle = 0;
+}
+
+void tfxSetTexture(tfxTexture* tex, uint32_t unit) {
+	glActiveTexture(GL_TEXTURE0 + unit);
 	glBindTexture(GL_TEXTURE_2D, tex->handle);
 }
 
@@ -6875,8 +6901,7 @@ tfxRenderTarget tfxMakeRenderTarget(const tfxRenderTargetDesc* desc) {
 	glGenTextures(1, &rt.colorTexture.handle);
 	glBindTexture(GL_TEXTURE_2D, rt.colorTexture.handle);
 
-	GLint internalFormat = tfx_def(desc->format, GL_RGBA8);
-	GLenum format = _toGlFormat(internalFormat);
+	GLint format = tfx_def((int)desc->format, GL_RGBA);
 
 	if (format == GL_NONE) {
 		printf("Error: Unsupported pixel format!\n");
@@ -6893,7 +6918,7 @@ tfxRenderTarget tfxMakeRenderTarget(const tfxRenderTargetDesc* desc) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, desc->width, desc->height, 0, format, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, format, desc->width, desc->height, 0, format, GL_UNSIGNED_BYTE, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt.colorTexture.handle, 0);
@@ -6931,8 +6956,11 @@ tfxRenderTarget tfxMakeRenderTarget(const tfxRenderTargetDesc* desc) {
 		glDeleteRenderbuffers(1, &rt.rbo);
 		memset(&rt, 0, sizeof(tfxRenderTarget));
 	}
-
+    printf("created rendertarget: %i\n", rt.fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+#ifdef TFX_DEBUG
+    TFX_CHECK("tfxMakeRenderTarget");
+#endif
 	return rt;
 }
 
@@ -6949,6 +6977,7 @@ void tfxReleaseRenderTarget(tfxRenderTarget* rt) {
 	glDeleteTextures(1, &rt->colorTexture.handle);
 	glDeleteTextures(1, &rt->depthTexture.handle);
 	glDeleteRenderbuffers(1, &rt->rbo);
+    printf("released rendertarget: %i\n", rt->fbo);
 	memset(rt, 0, sizeof(tfxRenderTarget));
 }
 
@@ -6998,10 +7027,13 @@ tfxShader tfxMakeShader(const tfxMemory* vert_src, const tfxMemory* frag_src) {
 	else printf("shader program linking successful: %i\n", shd.handle);
 
 	//detach and delete shaders
-	glDetachShader(vertexShader, GL_VERTEX_SHADER);
-	glDetachShader(fragmentShader, GL_FRAGMENT_SHADER);
+	glDetachShader(shd.handle, vertexShader);
+	glDetachShader(shd.handle, fragmentShader);
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
+#ifdef TFX_DEBUG
+    TFX_CHECK("tfxMakeShader");
+#endif
 	return shd;
 }
 
@@ -7020,6 +7052,7 @@ void tfxSetShader(const tfxShader* shader) {
 void tfxReleaseShader(tfxShader* shader) {
 	glDeleteProgram(shader->handle);
 	printf("released shader: %i\n", shader->handle);
+    shader->handle = 0;
 }
 
 int tfxGetUniformLoc(const tfxShader* shader, const char* name) {
@@ -7132,6 +7165,8 @@ void tfxSetPipeline(const tfxPipeline* pip) {
 	else glDisable(GL_SCISSOR_TEST);
 
 	glDepthMask(pip->depthWriteEnabled);
+    glDepthFunc((GLenum)pip->depthCompareFunc);
+    /*
 	switch (pip->depthCompareFunc) {
 	case TFX_COMPARE_ALWAYS: glDepthFunc(GL_ALWAYS); break;
 	case TFX_COMPARE_EQUAL: glDepthFunc(GL_EQUAL);  break;
@@ -7141,8 +7176,10 @@ void tfxSetPipeline(const tfxPipeline* pip) {
 	case TFX_COMPARE_LESS_EQUAL: glDepthFunc(GL_LEQUAL); break;
 	case TFX_COMPARE_NEVER: glDepthFunc(GL_NEVER); break;
 	case TFX_COMPARE_NOT_EQUAL: glDepthFunc(GL_NOTEQUAL); break;
+    default: break;
 	}
-	glCullFace(pip->winding);
+    */
+    glFrontFace(tfx_def((GLenum)pip->winding, GL_CCW));
 }
 //FILE_END
 
