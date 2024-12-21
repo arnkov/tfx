@@ -1,6 +1,7 @@
 # tfx
 Tfx is an easy to use toy single header WIP graphics abstraction for OpenGL 3.3 and OpenGLes 3.0.
 It embeds glad for OpenGL function loading and tries, to enable painless graphics prototyping.
+It is meant mainly as a personal learning project and propably won't ever be ready for production. 
 
 It aims, to make OpenGL a bit less of a struggle: When to unbind the index buffer? What is the active depth compare function? And why is everything an int?!
 The style leans a bit towards modern graphics apis, but tfx doesn't hide opengl away. You could just use it, to load it and then write plain gl code.
@@ -13,9 +14,18 @@ To use it, just drop the header file into your project, include it and define TF
 The different licenses are included in the header file, which are WTFPL OR CC0-1.0 AND Apache-2.0 for the glad-headers and the uLicense for the actual code of tfx.
 
 Credits:
-David Herberth - [glad](https://github.com/Dav1dde/glad) /
-Sean Barrett - [stb_image](https://github.com/nothings/stb) /
-r-lyeh - [uLicense](https://github.com/r-lyeh/uLicense)
+David Herberth - [glad](https://github.com/Dav1dde/glad) \
+Sean Barrett - [stb_image](https://github.com/nothings/stb) \
+r-lyeh - [uLicense](https://github.com/r-lyeh/uLicense) \
+kgabis - [join.py](https://github.com/kgabis/ape) 
+
+# limitations & caveats
+- tfxRenderTarget only supports two attachments (color & depth)
+- for now, the only supported vertex format is TFX_VERTEXFORMAT_F32
+- pixel formats are limited to TFX_PIXELFORMAT_U8 / F32
+- tfxPipeline does not check the current draw state, but just tosses its commands at the gpu, also maybe it should be called tfxDrawState or tfxStyle, since it does not have much in common with modern graphics api's pipeline objects
+- tfxShader is currently limited to vertex and fragment shaders
+- ...and most likely some more I don't know about yet.
 
 ## triangle example using glfw for windowing
 ```c
