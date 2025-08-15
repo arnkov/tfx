@@ -1,13 +1,13 @@
 # tfx
 Tfx is an easy to use toy single header WIP graphics abstraction for OpenGL 3.3 and OpenGLes 3.0.
-It embeds glad for OpenGL function loading and tries, to enable painless graphics prototyping.
+It embeds glad for OpenGL function loading and tries to enable painless graphics prototyping.
 It is meant mainly as a personal learning project and propably won't ever be ready for production. 
 
-It aims, to make OpenGL a bit less of a struggle: When to unbind the index buffer? What is the active depth compare function? And why is everything an int?!
-The style leans a bit towards modern graphics apis, but tfx doesn't hide opengl away. You could just use it, to load it and then write plain gl code.
+It aims to make OpenGL a bit less of a struggle: When to unbind the index buffer? What is the active depth compare function? And why is everything an int?!
+The style leans a bit towards modern graphics apis, but tfx doesn't hide opengl away. You could just use it to load it and then write plain gl code.
 
 If you are looking for something more mature, have a look at sokol_gfx.h or bgfx.
-Right now it compiles as C and c++ on windows and linux. Other platforms should work, but are not tested.
+Right now it compiles as C and C++ on windows and linux. Other platforms should work, but are not tested.
 
 To use it, just drop the header file into your project, include it and define TFX_IMPL and the backend (TFX_GLCORE/TFX_GLES2) in *one* C/C++ file. Optional defines are TFX_NO_STBI and TFX_EXTERNAL_STBI in case you already included stb_image.h somewhere else in your project and/or want to define the implementation at some other point. You can find the header linked below.
 
@@ -21,7 +21,7 @@ kgabis - [join.py](https://github.com/kgabis/ape)
 
 # limitations & caveats
 - tfxRenderTarget only supports two attachments (color & depth)
-- for now, the only supported vertex format is TFX_VERTEXFORMAT_F32
+- for now the only supported vertex format is TFX_VERTEXFORMAT_F32
 - pixel formats are limited to TFX_PIXELFORMAT_U8 / F32
 - tfxPipeline does not check the current draw state, but just tosses its commands at the gpu, also maybe it should be called tfxDrawState or tfxStyle, since it does not have much in common with modern graphics api's pipeline objects
 - tfxShader is currently limited to vertex and fragment shaders
